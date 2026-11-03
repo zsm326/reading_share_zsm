@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE struts PUBLIC
+    "-//Apache Software Foundation//DTD Struts Configuration 2.5//EN"
+    "http://struts.apache.org/dtds/struts-2.5.dtd">
+
+<struts>
+    <!-- 开发模式：出错时打印详细堆栈，便于调试 -->
+    <constant name="struts.devMode" value="true"/>
+    <constant name="struts.i18n.encoding" value="UTF-8"/>
+    <!-- 上传文件总大小限制 10MB -->
+    <constant name="struts.multipart.maxSize" value="10485760"/>
+
+    <!--
+      约定：所有 redirect/redirectAction 一律显式拼接 ${request.contextPath}
+      （Struts2 redirectAction 虽理论上会自动拼 contextPath，
+       但不同版本/配置下行为可能有差异，显式写最保险）
+    -->
+
+    <package name="default" extends="struts-default">
+
+        <!-- ============ 用户模块 ============ -->
+        <action name="user_register" class="com.read.action.UserAction" method="register">
+            <!-- 注册成功：跳登录页 action -->
+            <result name="success" type="redirect">${request.contextPath}/user_login.action</result>
+            <!-- 注册失败：回到注册表单 -->
+            <result name="input">/pages/user/register.jsp</result>
+        </action>
+        <action name="user_login" class="com.read.action.UserAction" method="login">
+            <!-- 登录成功：跳首页 -->
+            <result name="success" type="redirect">${request.contextPath}/pages/index.jsp</result>
+            <!-- input: 校验失败/密码错误时重新显示登录表单（Action 已 set fieldErrors） -->
+            <result name="input">/pages/user/login.jsp</result>
+            <!-- none: GET 直接打开登录页（username/password 均为空） -->
+            <result name="none">/pages/user/login.jsp</result>
+        </action>
+        <action name="user_logout" class="com.read.action.UserAction" method="logout">
+            <result name="success" type="redirect">${request.contextPath}/pages/index.jsp</result>
+        </action>
+        <action name="user_profile" class="com.read.action.UserAction" method="profile">
+            <result name="success">/pages/user/profile.jsp</result>
+        </action>
+        <action name="user_updateNickname" class="com.read.action.UserAction" method="updateNickname">
+            <result name="success" type="redirect">${request.contextPath}/user_profile.action</result>
+            <result name="input">/pages/user/profile.jsp</result>
+        </action>
+        <action name="user_updatePassword" class="com.read.action.UserAction" method="updatePassword">
+            <result name="success" type="redirect">${request.contextPath}/user_profile.action</result>
+            <result name="input">/pages/user/profile.jsp</result>
+        </action>
+        <action name="user_updateAvatar" class="com.read.action.UserAction" method="updateAvatar">
+            <result name="success" type="redirect">${request.contextPath}/user_profile.action</result>
+            <result name="input">/pages/user/profile.jsp</result>
+        </action>
+
+        <!-- ============ 书籍模块 ============ -->
+        <action name="book_list" class="com.read.action.BookAction" method="list">
+            <result name="success">/pages/book/list.jsp</result>
+        </action>
+        <action name="book_detail" class="com.read.action.BookAction" method="detail">
+            <result name="success">/pages/book/detail.jsp</result>
+            <result name="none" type="redirect">${request.contextPath}/pages/index.jsp</result>
+        </action>
+        <action name="book_addPage" class="com.read.action.BookAction" method="addPage">
+            <result name="success">/pages/book/add.jsp</result>
+        </action>
+        <action name="book_add" class="com.read.action.BookAction" method="add">
+            <result name="success" type="redirect">${request.contextPath}/book_list.action</result>
+            <result name="input">/pages/book/add.jsp</result>
+        </action>
+
+        <!-- 书籍封面：打开上传页面（仅分享者/管理员，无权时 none 跳回详情页） -->
+        <action name="book_coverPage" class="com.read.action.BookUploadCoverAction" method="page">
+            <result name="success">/pages/admin/bookCover.jsp</result>
+            <result name="none" type="redirect">${request.contextPath}/book_detail.action?id=${id}</result>
+        </action>
+
+        <!-- 书籍封面：上传并更新
+             fileUpload 拦截器：限制单文件最大 2MB，仅允许 jpg/jpeg/png
+             （Action 内部还会再做一次类型/大小校验，给出中文提示） -->
+        <action name="book_uploadCover" class="com.read.action.BookUploadCoverAction" method="upload">
+            <interceptor-ref name="fileUpload">
+                <param name="maximumSize">2097152</param>
+                <param name="allowedExtensions">jpg,jpeg,png</param>
+            </interceptor-ref>
+            <interceptor-ref name="defaultStack"/>
+            <!-- 上传成功自动回到该书详情页 -->
+            <result name="success" type="redirect">${request.contextPath}/book_detail.action?id=${id}</result>
+            <!-- 校验失败/上传失败回到编辑封面页 -->
+            <result name="input">/pages/admin/bookCover.jsp</result>
+            <result name="none" type="redirect">${request.contextPath}/book_detail.action?id=${id}</result>
+        </action>
+
+        <!-- ============ 书单模块 ============ -->
+        <action name="booklist_public" class="com.read.action.BookListAction" method="publicList">
+            <result name="success">/pages/booklist/public.jsp</result>
+        </action>
+        <action name="booklist_my" class="com.read.action.BookListAction" method="my">
+            <result name="success">/pages/booklist/my.jsp</result>
+        </action>
+        <action name="booklist_detail" class="com.read.action.BookListAction" method="detail">
+            <result name="success">/pages/booklist/detail.jsp</result>
+            <result name="none" type="redirect">${request.contextPath}/booklist_public.action</result>
+        </action>
+        <action name="booklist_add" class="com.read.action.BookListAction" method="add">
+            <result name="success" type="redirect">${request.contextPath}/booklist_my.action</result>
+            <result name="input">/pages/booklist/add.jsp</result>
+        </action>
+        <action name="booklist_editPage" class="com.read.action.BookListAction" method="editPage">
+            <result name="success">/pages/booklist/edit.jsp</result>
+            <result name="none" type="redirect">${request.contextPath}/booklist_my.action</result>
+        </action>
+        <action name="booklist_update" class="com.read.action.BookListAction" method="update">
+            <result name="success" type="redirect">${request.contextPath}/booklist_my.action</result>
+            <result name="input">/pages/booklist/edit.jsp</result>
+            <result name="none" type="redirect">${request.contextPath}/booklist_my.action</result>
+        </action>
+        <action name="booklist_delete" class="com.read.action.BookListAction" method="delete">
+            <result name="success" type="redirect">${request.contextPath}/booklist_my.action</result>
+        </action>
+        <action name="booklist_addBook" class="com.read.action.BookListAction" method="addBook">
+            <result name="success" type="redirect">${request.contextPath}/booklist_detail.action?id=${id}</result>
+            <result name="input" type="redirect">${request.contextPath}/booklist_detail.action?id=${id}</result>
+        </action>
+        <action name="booklist_removeBook" class="com.read.action.BookListAction" method="removeBook">
+            <result name="success" type="redirect">${request.contextPath}/booklist_detail.action?id=${id}</result>
+        </action>
+
+        <!-- ============ 读书笔记模块 ============ -->
+        <action name="note_list" class="com.read.action.NoteAction" method="list">
+            <result name="success">/pages/note/list.jsp</result>
+        </action>
+        <action name="note_my" class="com.read.action.NoteAction" method="my">
+            <result name="success">/pages/note/my.jsp</result>
+        </action>
+        <action name="note_detail" class="com.read.action.NoteAction" method="detail">
+            <result name="success">/pages/note/detail.jsp</result>
+            <result name="none" type="redirect">${request.contextPath}/note_list.action</result>
+        </action>
+        <action name="note_addPage" class="com.read.action.NoteAction" method="addPage">
+            <result name="success">/pages/note/add.jsp</result>
+            <result name="none" type="redirect">${request.contextPath}/book_list.action</result>
+        </action>
+        <action name="note_add" class="com.read.action.NoteAction" method="add">
+            <result name="success" type="redirect">${request.contextPath}/note_my.action</result>
+            <result name="input" type="redirect">${request.contextPath}/note_my.action</result>
+        </action>
+        <action name="note_editPage" class="com.read.action.NoteAction" method="editPage">
+            <result name="success">/pages/note/edit.jsp</result>
+            <result name="none" type="redirect">${request.contextPath}/note_my.action</result>
+        </action>
+        <action name="note_update" class="com.read.action.NoteAction" method="update">
+            <result name="success" type="redirect">${request.contextPath}/note_detail.action?id=${id}</result>
+            <result name="none" type="redirect">${request.contextPath}/note_my.action</result>
+        </action>
+        <action name="note_delete" class="com.read.action.NoteAction" method="delete">
+            <result name="success" type="redirect">${request.contextPath}/note_my.action</result>
+        </action>
+
+        <!-- ============ 收藏模块 ============ -->
+        <action name="collect_toggle" class="com.read.action.CollectAction" method="toggle">
+            <result name="list" type="redirect">${request.contextPath}/booklist_detail.action?id=${targetId}</result>
+            <result name="note" type="redirect">${request.contextPath}/note_detail.action?id=${targetId}</result>
+        </action>
+        <action name="collect_my" class="com.read.action.CollectAction" method="my">
+            <result name="success">/pages/collect/my.jsp</result>
+        </action>
+
+        <!-- ============ 评论模块 ============ -->
+        <action name="comment_add" class="com.read.action.CommentAction" method="add">
+            <result name="success" type="redirect">${request.contextPath}/note_detail.action?id=${noteId}</result>
+            <result name="input" type="redirect">${request.contextPath}/note_detail.action?id=${noteId}</result>
+        </action>
+        <action name="comment_delete" class="com.read.action.CommentAction" method="delete">
+            <result name="success" type="redirect">${request.contextPath}/note_detail.action?id=${noteId}</result>
+        </action>
+
+        <!-- ============ 管理员后台 ============ -->
+        <action name="admin_users" class="com.read.action.AdminAction" method="users">
+            <result name="success">/pages/admin/users.jsp</result>
+        </action>
+        <action name="admin_notes" class="com.read.action.AdminAction" method="notes">
+            <result name="success">/pages/admin/notes.jsp</result>
+        </action>
+        <action name="admin_deleteNote" class="com.read.action.AdminAction" method="deleteNote">
+            <result name="success" type="redirect">${request.contextPath}/admin_notes.action</result>
+        </action>
+        <action name="admin_comments" class="com.read.action.AdminAction" method="comments">
+            <result name="success">/pages/admin/comments.jsp</result>
+        </action>
+        <action name="admin_deleteComment" class="com.read.action.AdminAction" method="deleteComment">
+            <result name="success" type="redirect">${request.contextPath}/admin_comments.action</result>
+        </action>
+        <action name="admin_books" class="com.read.action.AdminAction" method="books">
+            <result name="success">/pages/admin/books.jsp</result>
+        </action>
+        <action name="admin_bookAddPage" class="com.read.action.AdminAction" method="bookAddPage">
+            <result name="success">/pages/admin/bookAdd.jsp</result>
+        </action>
+        <action name="admin_deleteBook" class="com.read.action.AdminAction" method="deleteBook">
+            <result name="success" type="redirect">${request.contextPath}/admin_books.action</result>
+        </action>
+
+        <!-- 书籍审核管理 -->
+        <action name="admin_bookAudits" class="com.read.action.AdminAction" method="bookAudits">
+            <result name="success">/pages/admin/bookAudits.jsp</result>
+            <result name="none" type="redirect">${request.contextPath}/pages/index.jsp</result>
+        </action>
+        <action name="admin_approveBook" class="com.read.action.AdminAction" method="approveBook">
+            <result name="success" type="redirect">${request.contextPath}/admin_bookAudits.action</result>
+            <result name="none" type="redirect">${request.contextPath}/pages/index.jsp</result>
+        </action>
+        <action name="admin_rejectBook" class="com.read.action.AdminAction" method="rejectBook">
+            <result name="success" type="redirect">${request.contextPath}/admin_bookAudits.action</result>
+            <result name="none" type="redirect">${request.contextPath}/pages/index.jsp</result>
+        </action>
+
+        <!-- 封面审核管理 -->
+        <action name="admin_covers" class="com.read.action.AdminAction" method="coverAudits">
+            <result name="success">/pages/admin/covers.jsp</result>
+            <result name="none" type="redirect">${request.contextPath}/pages/index.jsp</result>
+        </action>
+        <action name="admin_approveCover" class="com.read.action.AdminAction" method="approveCover">
+            <result name="success" type="redirect">${request.contextPath}/admin_covers.action</result>
+            <result name="none" type="redirect">${request.contextPath}/pages/index.jsp</result>
+        </action>
+        <action name="admin_rejectCover" class="com.read.action.AdminAction" method="rejectCover">
+            <result name="success" type="redirect">${request.contextPath}/admin_covers.action</result>
+            <result name="none" type="redirect">${request.contextPath}/pages/index.jsp</result>
+        </action>
+
+    </package>
+</struts>
